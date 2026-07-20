@@ -1,0 +1,111 @@
+import { urlFor } from "../../lib/image";
+---
+import MainLayout from "../../layouts/MainLayout.astro";
+import { client } from "../../lib/sanity";
+
+export async function getStaticPaths() {
+  const reviews = await client.fetch(`
+    *[_type == "restaurantReview"]{
+      "slug": slug.current
+    }
+  `);
+
+  return reviews.map((review: any) => ({
+    params: {
+      slug: review.slug,
+    },
+  }));
+}
+
+const { slug } = Astro.params;
+
+const review = await client.fetch(
+  `
+  *[_type == "restaurantReview" && slug.current == $slug][0]{
+    title,
+    deck,
+    rating,
+    publishedDate,
+    heroImage,
+    venue->{
+      name,
+      city,
+      province,
+      cuisine
+    }
+  }
+  `,
+  { slug }
+);
+
+if (!review) {
+  return Astro.redirect("/404");
+}
+---
+
+<MainLayout title={`${review.title} | Dining Unhinged`}>
+
+  <section class="article-hero">
+
+    <a href="/restaurants" class="back-link">
+      ← Back to Restaurants
+    </a>
+
+    <p class="article-category">
+      {review.venue.cuisine} • {review.venue.city}, {review.venue.province}
+    </p>
+
+    <h1>{review.title}</h1>
+
+    <div class="article-stars">
+      {"★".repeat(review.rating)}
+    </div>
+
+    <p class="article-deck">
+      {review.deck}
+    </p>
+
+  </section>
+
+  <section class="article-image">
+
+  <img
+    src={urlFor(review.heroImage).width(1600).url()}
+    alt={review.title}
+  />
+
+  </section>
+
+  <section class="review-details">
+
+    <div class="detail-box">
+      <span class="detail-label">Venue</span>
+      <strong>{review.venue.name}</strong>
+    </div>
+
+    <div class="detail-box">
+      <span class="detail-label">Location</span>
+      <strong>{review.venue.city}, {review.venue.province}</strong>
+    </div>
+
+    <div class="detail-box">
+      <span class="detail-label">Cuisine</span>
+      <strong>{review.venue.cuisine}</strong>
+    </div>
+
+    <div class="detail-box">
+      <span class="detail-label">Published</span>
+      <strong>{review.publishedDate}</strong>
+    </div>
+
+  </section>
+
+  <section class="article-body">
+
+    <p>
+      Review body coming from Sanity in the next phase.
+    </p>
+
+  </section>
+
+</MainLayout>

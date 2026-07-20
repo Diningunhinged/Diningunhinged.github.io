@@ -1,50 +1,49 @@
 ---
 import MainLayout from "../layouts/MainLayout.astro";
 import ReviewCard from "../components/ReviewCard.astro";
+import { client } from "../lib/sanity";
+import { urlFor } from "../lib/image";
+
+const reviews = await client.fetch(`
+  *[_type == "restaurantReview"] | order(publishedDate desc){
+    title,
+    rating,
+    excerpt,
+    heroImage,
+    "slug": slug.current,
+    venue->{
+      cuisine
+    }
+  }
+`);
 ---
 
 <MainLayout title="Restaurants | Dining Unhinged">
 
-<section>
+  <section>
 
-  <h1>Restaurants</h1>
+    <h1>Restaurants</h1>
 
-  <p class="featured-summary">
-    Every restaurant we've reviewed. No paid rankings. No sponsored placements.
-    Just honest opinions and memorable meals.
-  </p>
+    <p class="featured-summary">
+      Every restaurant we've reviewed. No paid rankings. No sponsored placements.
+      Just honest opinions and memorable meals.
+    </p>
 
-  <div class="restaurant-grid">
+    <div class="restaurant-grid">
 
-    <ReviewCard
-      title="Pip"
-      rating={5}
-      category="Brunch"
-      excerpt="I went into Pip looking for a calm reset after a first date that very clearly did not believe in pacing."
-      image="/images/pip.jpg"
-      url="/restaurants/pip"
-    />
+      {reviews.map((review: any) => (
+        <ReviewCard
+          title={review.title}
+          rating={review.rating}
+          category={review.venue?.cuisine ?? ""}
+          excerpt={review.excerpt}
+          image={urlFor(review.heroImage).width(800).url()}
+          url={`/restaurants/${review.slug}`}
+        />
+      ))}
 
-    <ReviewCard
-      title="Bodega Ellerslie"
-      rating={5}
-      category="Spanish Tapas"
-      excerpt="A birthday dinner that turned into a guided tour of the menu, complete with exceptional cocktails, unforgettable tapas, and service that deserves every bit of the recognition."
-      image="/images/smoked-duck-mousse.jpg"
-      url="/restaurants/bodega-ellerslie"
-    />
+    </div>
 
-    <ReviewCard
-      title="Blowers & Grafton"
-      rating={5}
-      category="East Coast Pub Fare"
-      excerpt="An authentic Halifax donair, two raspberry mojitos, complimentary Irish cheesecake, and a birthday serenade that should probably have qualified as public humiliation."
-      image="/images/og-halifax-donair.jpg"
-      url="/restaurants/blowers-and-grafton"
-    />
-
-  </div>
-
-</section>
+  </section>
 
 </MainLayout>
